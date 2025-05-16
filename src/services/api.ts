@@ -8,6 +8,12 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface RegisterCredentials {
+  email: string;
+  password: string;
+  confirmPassword?: string;
+}
+
 export interface LoginResponse {
   token: string;
   // Add any other properties returned by your API
@@ -21,6 +27,24 @@ export interface UserData {
 
 // Authentication Services
 export const authService = {
+  // Register function
+  register: async (credentials: RegisterCredentials): Promise<LoginResponse> => {
+    const response = await fetch(`${BASE_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Échec de l\'inscription. Veuillez réessayer.');
+    }
+
+    return response.json();
+  },
+
   // Login function
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     const response = await fetch(`${BASE_URL}/login`, {

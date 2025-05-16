@@ -8,14 +8,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { UserPlus } from 'lucide-react';
 
-const Login = () => {
+const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading, error, isAuthenticated } = useAuth();
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const { register, loading, error, isAuthenticated } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login({ email, password });
+    setPasswordError('');
+    
+    if (password !== confirmPassword) {
+      setPasswordError('Les mots de passe ne correspondent pas');
+      return;
+    }
+    
+    await register({ email, password });
   };
 
   // Redirect if already authenticated
@@ -28,9 +37,9 @@ const Login = () => {
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Connexion</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Inscription</CardTitle>
             <CardDescription className="text-center">
-              Saisissez vos identifiants pour accéder à votre compte
+              Créez votre compte pour accéder à l'application
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -48,9 +57,7 @@ const Login = () => {
                 />
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Mot de passe</Label>
-                </div>
+                <Label htmlFor="password">Mot de passe</Label>
                 <Input
                   id="password"
                   type="password"
@@ -58,8 +65,21 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="current-password"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                {passwordError && (
+                  <p className="text-sm text-red-500 mt-1">{passwordError}</p>
+                )}
               </div>
               
               {error && (
@@ -76,21 +96,21 @@ const Login = () => {
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    <span>Connexion...</span>
+                    <span>Création du compte...</span>
                   </div>
                 ) : (
-                  <span>Se connecter</span>
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    <span>S'inscrire</span>
+                  </>
                 )}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+          <CardFooter className="flex justify-center">
             <div className="text-center text-sm">
-              <span className="text-gray-500">Pas encore de compte?</span>{' '}
-              <Link to="/register" className="text-primary hover:underline">S'inscrire</Link>
-            </div>
-            <div className="text-center text-sm text-gray-500">
-              Application sécurisée par JWT
+              <span className="text-gray-500">Déjà un compte?</span>{' '}
+              <Link to="/login" className="text-primary hover:underline">Se connecter</Link>
             </div>
           </CardFooter>
         </Card>
@@ -99,4 +119,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;

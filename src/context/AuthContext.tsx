@@ -1,8 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService, LoginCredentials, UserData } from '@/services/api';
-import { useToast } from '@/components/ui/use-toast';
+import { authService, LoginCredentials, RegisterCredentials, UserData } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: UserData | null;
@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -60,6 +61,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       loadUser();
     }
   }, [token]);
+
+  const register = async (credentials: RegisterCredentials) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await authService.register(credentials);
+      
+      // Store the token
+      localStorage.setItem('authToken', response.token);
+      setToken(response.token);
+      
+      // Fetch user data
+      const userData = await authService.getMe(response.token);
+      setUser(userData);
+      setIsAuthenticated(true);
+      
+      toast({
+        title: "Inscription réussie",
+        description: "Votre compte a été créé avec succès!",
+      });
+      
+      navigate('/dashboard');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'inscription';
+      setError(errorMessage);
+      
+      toast({
+        variant: "destructive",
+        title: "Erreur d'inscription",
+        description: errorMessage,
+      });
+      
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (credentials: LoginCredentials) => {
     setLoading(true);
@@ -117,6 +156,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     error,
     login,
+    register,
     logout,
     isAuthenticated,
   };
