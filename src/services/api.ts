@@ -1,6 +1,6 @@
 
 // API service for authentication and data fetching
-const BASE_URL = 'http://localhost:3000/api/auth';
+const BASE_URL = '/api/auth';
 
 // Types
 export interface LoginCredentials {
