@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,20 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const { register, loading, error, isAuthenticated } = useAuth();
+  const { register, loading, error, validationErrors, isAuthenticated, clearErrors } = useAuth();
+
+  // Clear errors when component unmounts or when fields change
+  useEffect(() => {
+    return () => {
+      clearErrors();
+    };
+  }, [email, password, confirmPassword]);
+
+  const getFieldError = (fieldName: string) => {
+    if (!validationErrors) return null;
+    const error = validationErrors.find(err => err.param === fieldName);
+    return error ? error.msg : null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +67,11 @@ const Register = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
+                  className={getFieldError('email') ? 'border-red-500' : ''}
                 />
+                {getFieldError('email') && (
+                  <p className="text-sm text-red-500 mt-1">{getFieldError('email')}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe</Label>
@@ -65,7 +82,11 @@ const Register = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className={getFieldError('password') ? 'border-red-500' : ''}
                 />
+                {getFieldError('password') && (
+                  <p className="text-sm text-red-500 mt-1">{getFieldError('password')}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
@@ -76,13 +97,14 @@ const Register = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  className={passwordError ? 'border-red-500' : ''}
                 />
                 {passwordError && (
                   <p className="text-sm text-red-500 mt-1">{passwordError}</p>
                 )}
               </div>
               
-              {error && (
+              {error && !validationErrors && (
                 <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">
                   {error}
                 </div>

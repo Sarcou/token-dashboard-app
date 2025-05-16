@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService, LoginCredentials, RegisterCredentials, UserData } from '@/services/api';
+import { authService, LoginCredentials, RegisterCredentials, UserData, ValidationError } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -9,10 +9,12 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   error: string | null;
+  validationErrors: ValidationError[] | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  clearErrors: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +36,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('authToken'));
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[] | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!token);
   
   const navigate = useNavigate();
@@ -62,9 +65,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [token]);
 
+  const clearErrors = () => {
+    setError(null);
+    setValidationErrors(null);
+  };
+
   const register = async (credentials: RegisterCredentials) => {
     setLoading(true);
-    setError(null);
+    clearErrors();
     
     try {
       const response = await authService.register(credentials);
@@ -84,15 +92,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
       
       navigate('/dashboard');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'inscription';
-      setError(errorMessage);
-      
-      toast({
-        variant: "destructive",
-        title: "Erreur d'inscription",
-        description: errorMessage,
-      });
+    } catch (err: any) {
+      // Handle validation errors
+      if (err.errors && Array.isArray(err.errors)) {
+        setValidationErrors(err.errors);
+        const generalError = err.message || 'Veuillez corriger les erreurs dans le formulaire.';
+        setError(generalError);
+        
+        toast({
+          variant: "destructive",
+          title: "Erreur d'inscription",
+          description: generalError,
+        });
+      } else {
+        // Handle generic errors
+        const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'inscription';
+        setError(errorMessage);
+        
+        toast({
+          variant: "destructive",
+          title: "Erreur d'inscription",
+          description: errorMessage,
+        });
+      }
       
       setIsAuthenticated(false);
     } finally {
@@ -102,7 +124,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (credentials: LoginCredentials) => {
     setLoading(true);
-    setError(null);
+    clearErrors();
     
     try {
       const response = await authService.login(credentials);
@@ -155,10 +177,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     token,
     loading,
     error,
+    validationErrors,
     login,
     register,
     logout,
     isAuthenticated,
+    clearErrors,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

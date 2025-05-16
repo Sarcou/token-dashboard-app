@@ -14,6 +14,16 @@ export interface RegisterCredentials {
   confirmPassword?: string;
 }
 
+export interface ValidationError {
+  msg: string;
+  param: string;
+}
+
+export interface ValidationErrorResponse {
+  errors: ValidationError[];
+  message?: string;
+}
+
 export interface LoginResponse {
   token: string;
   // Add any other properties returned by your API
@@ -38,7 +48,11 @@ export const authService = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = await response.json();
+      // Handle validation errors specifically
+      if (errorData.errors && Array.isArray(errorData.errors)) {
+        throw { errors: errorData.errors, message: errorData.message };
+      }
       throw new Error(errorData.message || 'Échec de l\'inscription. Veuillez réessayer.');
     }
 
